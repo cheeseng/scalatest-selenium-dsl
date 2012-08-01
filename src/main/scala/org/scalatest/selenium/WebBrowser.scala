@@ -1034,138 +1034,49 @@ trait WebBrowser {
   
   def currentUrl(implicit driver: WebDriver): String = driver.getCurrentUrl
   
-  def id(elementId: String)(implicit driver: WebDriver): Seq[WebElement] = {
-    val elements = driver.findElements(By.id(elementId)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with id '" + elementId + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "id", 1)
-                   )
-  }
-    
-  val ID = (elementId: String, driver: WebDriver) => id(elementId)(driver) 
-  
-  def name(elementName: String)(implicit driver: WebDriver): Seq[WebElement] = { 
-    val elements = driver.findElements(By.name(elementName)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with name '" + elementName + "' not found."),
+  sealed trait Query {
+    val by: By
+    val queryString: String
+    def getWebElement(implicit driver: WebDriver): WebElement = {
+      findWebElement(driver) match {
+        case Some(element) => element
+        case None => 
+          throw new TestFailedException(
+                     sde => Some("Element '" + queryString + "' not found."),
                      None,
                      getStackDepthFun("WebBrowser.scala", "name", 1)
                    )
-  }
-    
-  val NAME = (elementName: String, driver: WebDriver) => name(elementName)(driver)
-  
-  def element(name: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]])(implicit driver: WebDriver): WebElement = {
-    var element: WebElement = null
-    lookups.find { c => 
-      try {
-        element = c(name, driver)
-        true
-      } 
-      catch {
-        case _ => false
       }
-    } match {
-      case Some(_) => element
-      case None  => 
-        throw new TestFailedException(
-                     sde => Some("Element '" + name + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "element", 1)
-                   )
     }
-  }
     
-  def xpath(path: String)(implicit driver: WebDriver): Seq[WebElement] = { 
-    val elements = driver.findElements(By.xpath(path)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with xpath '" + path + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "xpath", 1)
-                   )
+    def findWebElement(implicit driver: WebDriver): Option[WebElement] = {
+      try {
+        Some(driver.findElement(by))
+      }
+      catch {
+        case e: org.openqa.selenium.NoSuchElementException => None
+          
+      }
+    }
+    def findAllWebElements(implicit driver: WebDriver): Seq[WebElement] = driver.findElements(by).toSeq
   }
-    
-  val XPATH = (path: String, driver: WebDriver) => xpath(path)(driver)
+  case class IdQuery(queryString: String) extends Query { val by = By.id(queryString)}
+  case class NameQuery(queryString: String) extends Query { val by = By.name(queryString) }
+  case class XPathQuery(queryString: String) extends Query { val by = By.xpath(queryString) }
+  case class ClassNameQuery(queryString: String) extends Query { val by = By.className(queryString) }
+  case class CssSelectorQuery(queryString: String) extends Query { val by = By.cssSelector(queryString) }
+  case class LinkTextQuery(queryString: String) extends Query { val by = By.linkText(queryString) }
+  case class PartialLinkTextQuery(queryString: String) extends Query { val by = By.partialLinkText(queryString) }
+  case class TagNameQuery(queryString: String) extends Query { val by = By.tagName(queryString) }
   
-  def className(className: String)(implicit driver: WebDriver): Seq[WebElement] = { 
-    val elements = driver.findElements(By.className(className)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with className '" + className + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "className", 1)
-                   )
-  }
-    
-  val CLASSNAME = (clazzName: String, driver: WebDriver) => className(clazzName)(driver)
-  
-  def cssSelector(cssSelector: String)(implicit driver: WebDriver): Seq[WebElement] = {
-    val elements = driver.findElements(By.cssSelector(cssSelector)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with cssSelector '" + cssSelector + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "cssSelector", 1)
-                   )
-  }
-    
-  val CSSSELECTOR = (selector: String, driver: WebDriver) => cssSelector(selector)(driver)
-  
-  def linkText(linkText: String)(implicit driver: WebDriver): Seq[WebElement] = {
-    val elements = driver.findElements(By.linkText(linkText)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with linkText '" + linkText + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "linkText", 1)
-                   )
-  }
-    
-  val LINKTEXT = (lText: String, driver: WebDriver) => linkText(lText)(driver)
-  
-  def partialLinkText(partialLinkText: String)(implicit driver: WebDriver): Seq[WebElement] = {
-    val elements = driver.findElements(By.partialLinkText(partialLinkText)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with partialLinkText '" + partialLinkText + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "partialLinkText", 1)
-                   )
-  }
-    
-  val PARTIALLINKTEXT = (plText: String, driver: WebDriver) => partialLinkText(plText)(driver)
-  
-  def tagName(tagName: String)(implicit driver: WebDriver): Seq[WebElement] = {
-    val elements = driver.findElements(By.tagName(tagName)).toSeq
-    if (elements.length > 0)
-      elements
-    else
-      throw new TestFailedException(
-                     sde => Some("Element with tagName '" + tagName + "' not found."),
-                     None,
-                     getStackDepthFun("WebBrowser.scala", "tagName", 1)
-                   )
-  }
-    
-  val TAGNAME = (tName: String, driver: WebDriver) => tagName(tName)(driver)
+  def id(elementId: String): IdQuery = new IdQuery(elementId)
+  def name(elementName: String): NameQuery = new NameQuery(elementName)
+  def xpath(xpath: String): XPathQuery = new XPathQuery(xpath)
+  def className(className: String): ClassNameQuery = new ClassNameQuery(className)
+  def cssSelector(cssSelector: String): CssSelectorQuery = new CssSelectorQuery(cssSelector)
+  def linkText(linkText: String): LinkTextQuery = new LinkTextQuery(linkText)
+  def partialLinkText(partialLinkText: String): PartialLinkTextQuery = new PartialLinkTextQuery(partialLinkText)
+  def tagName(tagName: String): TagNameQuery = new TagNameQuery(tagName)
     
   private def createTypedElement(element: WebElement): Element = {
     if (isTextField(element))
@@ -1186,93 +1097,119 @@ trait WebBrowser {
     else
       new Element() { def underlying = element }
   }
-    
-  def find(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver): Option[Element] = {
-    // For performance purpose to avoid executing the lookup 2 times.
-    var element: WebElement = null
-    lookups.find { c => 
-      try {
-        val elementSeq: Seq[WebElement] = c(lookupValue, driver)
-        if (elementSeq.length > 0) {
-          element = elementSeq(0)
-          true
-        }
-        else
-          false
-      } 
-      catch {
-        case _ => false
-      }
-    } match {
-      case Some(_) => Some(createTypedElement(element))
-      case None  => None
+  
+  def find(query: Query)(implicit driver: WebDriver): Option[Element] = 
+    query.findWebElement match {
+      case Some(webElement) => Some(createTypedElement(webElement))
+      case None => None
     }
+  
+  def find(queryString: String)(implicit driver: WebDriver): Option[Element] = 
+    new IdQuery(queryString).findWebElement match {
+      case Some(webElement) => Some(createTypedElement(webElement))
+      case None => new NameQuery(queryString).findWebElement match {
+        case Some(webElement) => Some(createTypedElement(webElement))
+        case None => None
+      }
+    }
+  
+  def findAll(query: Query)(implicit driver: WebDriver): Seq[Element] = 
+    query.findAllWebElements.map { e => createTypedElement(e) }
+  
+  def findAll(queryString: String)(implicit driver: WebDriver): Seq[Element] = {
+    val byIdSeq = new IdQuery(queryString).findAllWebElements
+    if (byIdSeq.size > 0)
+      byIdSeq.map { e => createTypedElement(e) }
+    else 
+      new NameQuery(queryString).findAllWebElements.map { e => createTypedElement(e) }
   }
   
-  def findAll(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver): Seq[Element] = {
-    // For performance purpose to avoid executing the lookup 2 times.
-    var elements: Seq[WebElement] = IndexedSeq.empty
-    lookups.find { c => 
-      try {
-        elements = c(lookupValue, driver)
-        if (elements.length > 0) 
-          true
-        else
-          false
-      } 
-      catch {
-        case _ => false
-      }
-    } match {
-      case Some(_) => elements.map(createTypedElement(_))
-      case None  => Seq.empty
+  def textField(query: Query)(implicit driver: WebDriver) = new TextField(query.getWebElement)
+  
+  def textField(queryString: String)(implicit driver: WebDriver): TextField = 
+    try {
+      new TextField(new IdQuery(queryString).getWebElement)
     }
-  }
+    catch {
+      case _ => new TextField(new NameQuery(queryString).getWebElement)
+    }
   
-  implicit def seq2WebElement(elementSeq: Seq[WebElement]): WebElement = elementSeq(0)
+  def textArea(query: Query)(implicit driver: WebDriver) = new TextArea(query.getWebElement)
   
-  def textField(webElement: WebElement) = new TextField(webElement)
-  
-  def textField(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new TextField(element(lookupValue, lookups))
-  
-  def textArea(webElement: WebElement) = new TextArea(webElement)
-  
-  def textArea(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new TextArea(element(lookupValue, lookups))
+  def textArea(queryString: String)(implicit driver: WebDriver): TextArea = 
+    try {
+      new TextArea(new IdQuery(queryString).getWebElement)
+    }
+    catch {
+      case _ => new TextArea(new NameQuery(queryString).getWebElement)
+    }
   
   def radioButtonGroup(groupName: String)(implicit driver: WebDriver) = new RadioButtonGroup(groupName, driver)
   
-  def radioButton(webElement: WebElement) = new RadioButton(webElement)
+  def radioButton(query: Query)(implicit driver: WebDriver) = new RadioButton(query.getWebElement)
   
-  def radioButton(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new RadioButton(element(lookupValue, lookups))
+  def radioButton(queryString: String)(implicit driver: WebDriver): RadioButton = 
+    try {
+      new RadioButton(new IdQuery(queryString).getWebElement)
+    }
+    catch {
+      case _ => new RadioButton(new NameQuery(queryString).getWebElement)
+    }
   
-  def checkbox(webElement: WebElement) = new Checkbox(webElement)
+  def checkbox(query: Query)(implicit driver: WebDriver) = new Checkbox(query.getWebElement)
   
-  def checkbox(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new Checkbox(element(lookupValue, lookups))
+  def checkbox(queryString: String)(implicit driver: WebDriver): Checkbox = 
+    try {
+      new Checkbox(new IdQuery(queryString).getWebElement)
+    }
+    catch {
+      case _ => new Checkbox(new NameQuery(queryString).getWebElement)
+    }
   
-  def singleSel(webElement: WebElement) = new SingleSel(webElement)
+  def singleSel(query: Query)(implicit driver: WebDriver) = new SingleSel(query.getWebElement)
   
-  def singleSel(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new SingleSel(element(lookupValue, lookups))
+  def singleSel(queryString: String)(implicit driver: WebDriver): SingleSel = 
+    try {
+      new SingleSel(new IdQuery(queryString).getWebElement)
+    }
+    catch {
+      case _ => new SingleSel(new NameQuery(queryString).getWebElement)
+    }
   
-  def multiSel(webElement: WebElement) = new MultiSel(webElement)
+  def multiSel(query: Query)(implicit driver: WebDriver) = new MultiSel(query.getWebElement)
   
-  def multiSel(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) = 
-    new MultiSel(element(lookupValue, lookups))
+  def multiSel(queryString: String)(implicit driver: WebDriver): MultiSel = 
+    try {
+      new MultiSel(new IdQuery(queryString).getWebElement)
+    }
+    catch {
+      case _ => new MultiSel(new NameQuery(queryString).getWebElement)
+    }
+    
+  def button(webElement: WebElement): WebElement = webElement  // enable syntax 'click on aButton', where aButton is a WebElement.
   
-  def button(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver): WebElement = 
-    element(lookupValue, lookups)
+  def button(queryString: String)(implicit driver: WebDriver): WebElement = 
+    try {
+      new IdQuery(queryString).getWebElement
+    }
+    catch {
+      case _ => new NameQuery(queryString).getWebElement
+    }
   
   object click {
     def on(element: WebElement) {
       element.click()
     }
   
-    def on(lookupValue: String, lookups: Seq[(String, WebDriver) => Seq[WebElement]] = Seq(ID, NAME))(implicit driver: WebDriver) {
-      on(element(lookupValue, lookups))
+    def on(queryString: String)(implicit driver: WebDriver) {
+      // stack depth is not correct if just call the button("...") directly.
+      val target = try {
+        new IdQuery(queryString).getWebElement
+      }
+      catch {
+        case _ => new NameQuery(queryString).getWebElement
+      }
+      on(target)
     }
   }
   
@@ -1311,6 +1248,7 @@ trait WebBrowser {
   def frame(index: Int) = new FrameIndexTarget(index)
   def frame(nameOrId: String) = new FrameNameOrIdTarget(nameOrId)
   def frame(element: WebElement) = new FrameWebElementTarget(element)
+  def frame(query: Query)(implicit driver: WebDriver) = new FrameWebElementTarget(query.getWebElement)
   def window(nameOrHandle: String) = new WindowTarget(nameOrHandle)
   
   def goBack()(implicit driver: WebDriver) {
